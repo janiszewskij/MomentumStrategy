@@ -13,15 +13,15 @@ import glob
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score,log_loss
 
-
+#Input files load automation
 """
 url=r'https://info.bossa.pl/pub/ciagle/omega/cgl/few_last.zip'
 myfile = requests.get(url,stream = True)
 print(myfile.status_code)
 print(myfile.headers.get('content-type'))
-with open('D:\Kuba/Gain Capital/DownloadTest','wb') as f:
+with open(os.getcwd(),'wb') as f:
     f.write(myfile.content)
 """
 no_of_day_without_quotes=200
@@ -37,13 +37,12 @@ day10=10
 day50=50
 day100=100
 
-#sample_source_path=r'D:\Kuba\Gain Capital\OmegaInputs\Sample5'
 
 sample_source_path=os.getcwd()
 
-source_path = os.path.join(sample_source_path,"Sample5")
+source_path = os.path.join(sample_source_path,"Inputs")
+#source_path=os.path.join(sample_source_path)
 
-Input_Headers=["Name","Date","Open","High","Low","Close","Volume"]
 Input_Use_Cols=["Date","Close"]
 
 #Alternative paths
@@ -96,44 +95,45 @@ n100day_log_returns=(100.*np.log(merged_prices/merged_prices.shift(-day100))[:-1
 #derive buy indicator foa a given period True>> 'BUY' label, False >> 'SELL' label
 BUY_indicator=daily_log_returns_indicator_period>percent_return_indicator
 
-#print(n10day_log_returns)
-
 #TODO
-#descriptive statistics
+#descriptive statistics of inputs
 #graphs?
-#outliers
+#outliers/population skew
 
 np_BUY_indicator=np.array(BUY_indicator)
 np_n10day_log_returns=np.array(n10day_log_returns)
 
+print("Label dimension")
 print(np_BUY_indicator.shape)
+print("Features dimension")
 print(np_n10day_log_returns.shape)
-
-BUY_indicator.to_csv("BuyInd")
+print(np_n10day_log_returns.shape==np_BUY_indicator.shape)
 
 ###10 Day prediction
 max_dimension=np_BUY_indicator.shape[0]-day10
-X_train, X_test, Y_train, Y_test = train_test_split(n10day_log_returns[:max_dimension-return_indicator_period], np_BUY_indicator[return_indicator_period:max_dimension], test_size=0.2)
-clf=RandomForestClassifier(n_estimators=30)
+X_train, X_test, Y_train, Y_test = train_test_split(n10day_log_returns[return_indicator_period:max_dimension], np_BUY_indicator[:max_dimension-return_indicator_period], test_size=0.3)
+clf=RandomForestClassifier(n_estimators=100)
 clf.fit(X_train,Y_train)
 y_pred=clf.predict(X_test)
 print("Accuracy for",day10,"days: ",metrics.accuracy_score(Y_test, y_pred))
 
 #print(confusion_matrix(Y_test,y_pred))
 #print(classification_report(Y_test,y_pred))
+print("Log loss for",day10,"days: ",log_loss(Y_test,y_pred))
 
 ###50 Day prediction
 max_dimension=np_BUY_indicator.shape[0]-day50
-X_train, X_test, Y_train, Y_test = train_test_split(n50day_log_returns[:max_dimension-return_indicator_period], np_BUY_indicator[return_indicator_period:max_dimension], test_size=0.2)
+X_train, X_test, Y_train, Y_test = train_test_split(n50day_log_returns[return_indicator_period:max_dimension], np_BUY_indicator[:max_dimension-return_indicator_period], test_size=0.3)
 clf=RandomForestClassifier(n_estimators=100)
 clf.fit(X_train,Y_train)
 y_pred=clf.predict(X_test)
 print("Accuracy for",day50,"days: ",metrics.accuracy_score(Y_test, y_pred))
-
+print("Log loss for",day50,"days: ",log_loss(Y_test,y_pred))
 ###100 Day prediction
 max_dimension=np_BUY_indicator.shape[0]-day100
-X_train, X_test, Y_train, Y_test = train_test_split(n100day_log_returns[:max_dimension-return_indicator_period], np_BUY_indicator[return_indicator_period:max_dimension], test_size=0.3)
+X_train, X_test, Y_train, Y_test = train_test_split(n100day_log_returns[return_indicator_period:max_dimension], np_BUY_indicator[:max_dimension-return_indicator_period], test_size=0.3)
 clf=RandomForestClassifier(n_estimators=100)
 clf.fit(X_train,Y_train)
 y_pred=clf.predict(X_test)
 print("Accuracy for",day100,"days: ",metrics.accuracy_score(Y_test, y_pred))
+print("Log loss for",day100,"days: ",log_loss(Y_test,y_pred))
